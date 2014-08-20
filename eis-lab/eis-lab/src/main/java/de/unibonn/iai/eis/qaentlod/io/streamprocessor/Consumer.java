@@ -1,13 +1,19 @@
 package de.unibonn.iai.eis.qaentlod.io.streamprocessor;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import com.hp.hpl.jena.sparql.core.Quad;
 
 import de.unibonn.iai.eis.qaentlod.datatypes.Object2Quad;
+import de.unibonn.iai.eis.qaentlod.io.Main;
 import de.unibonn.iai.eis.qaentlod.io.utilities.DataSetResults;
+import de.unibonn.iai.eis.qaentlod.io.utilities.UtilMail;
 import de.unibonn.iai.eis.qaentlod.util.Dimension;
 import de.unibonn.iai.eis.qaentlod.util.Metrics;
 import de.unibonn.iai.eis.qaentlod.util.ResultDataSet;
@@ -28,7 +34,7 @@ public class Consumer extends Thread {
 	private boolean running;
 	private static String fileName = "C:\\Lab\\results.xml";
 	private static List<DataSetResults> results;
-	
+	private String mail;
 	/**
 	 * Creator of the class
 	 * @param streamManager, this class is the stream Manager to put all the values obtain
@@ -53,7 +59,7 @@ public class Consumer extends Thread {
 			this.streamManager.digMetric.compute(value);
 			this.streamManager.autMetric.compute(value);
 			//this.streamManager.freeMetric.compute(value);
-			cont++;
+			setCont(getCont() + 1);
 			contAux++;
 			if(contAux == 10000){
 				contAux = 0;
@@ -67,13 +73,14 @@ public class Consumer extends Thread {
 		//this.writeFile();
 	}
 
-
-	
+	/**
+	 * 
+	 */
 	public void writeFile(){
-		this.results = new ArrayList<DataSetResults>();
+		Consumer.setResults(new ArrayList<DataSetResults>());
 		DataSetResults result = new DataSetResults(this.producer.getServiceUrl(), streamManager.digMetric,
 				streamManager.autMetric, streamManager.freeMetric);
-		results.add(result);
+		getResults().add(result);
 
 		Metrics metric1 = new Metrics();
 		metric1.setName("Authenticity of the Dataset");
@@ -102,7 +109,9 @@ public class Consumer extends Thread {
 		results.getDimensions().add(dimension2);
 		
 		try {
-			ResultDataSet resultToWrite = ResultsHelper.read(fileName);
+			Main main = new Main();
+
+			ResultDataSet resultToWrite = ResultsHelper.read(main.loadConfiguration());
 					
 			resultToWrite.setLastDate(new Date());
 			boolean modified = false;
@@ -118,12 +127,69 @@ public class Consumer extends Thread {
 			
 			ResultsHelper.write(resultToWrite, fileName);
 
+			if(this.getMail() != null)
+				UtilMail.sendMail(this.getMail());
+			else
+				UtilMail.sendMail(this.loadMailDefault());
 			
 		} catch (Exception e) {
 			System.out.println("****** Can't save the result because: "
 					+ e.toString());
 		}
 	}
+
+	/**
+	 * This method read from a local file the directory where is saved the Dataset processed
+	 * @return The path of the file in the server
+	 * @throws IOException
+	 */
+	public String loadConfiguration() throws IOException {
+
+		String result = "";
+		Properties prop = new Properties();
+		String propFileName = "config.properties";
+
+		InputStream inputStream = getClass().getClassLoader()
+				.getResourceAsStream(propFileName);
+		prop.load(inputStream);
+		if (inputStream == null) {
+			throw new FileNotFoundException("property file '" + propFileName
+					+ "' not found in the classpath");
+		}
+
+		// get the property value and print it out
+		String dataBase = prop.getProperty("dataBase");
+
+		result = dataBase;
+		return result;
+	}
+	
+	/**
+	 * This method read from a local file the directory where is saved the Dataset processed
+	 * @return The path of the file in the server
+	 * @throws IOException
+	 */
+	public String loadMailDefault() throws IOException {
+
+		String result = "";
+		Properties prop = new Properties();
+		String propFileName = "config.properties";
+
+		InputStream inputStream = getClass().getClassLoader()
+				.getResourceAsStream(propFileName);
+		prop.load(inputStream);
+		if (inputStream == null) {
+			throw new FileNotFoundException("property file '" + propFileName
+					+ "' not found in the classpath");
+		}
+
+		// get the property value and print it out
+		String dataBase = prop.getProperty("defaultMail");
+
+		result = dataBase;
+		return result;
+	}
+	
 	
 	/**
 	 * @return the running
@@ -137,6 +203,48 @@ public class Consumer extends Thread {
 	 */
 	public void setRunning(boolean running) {
 		this.running = running;
+	}
+
+	/**
+	 * @return the mail
+	 */
+	public String getMail() {
+		return mail;
+	}
+
+	/**
+	 * @param mail the mail to set
+	 */
+	public void setMail(String mail) {
+		this.mail = mail;
+	}
+
+	/**
+	 * @return the results
+	 */
+	public static List<DataSetResults> getResults() {
+		return results;
+	}
+
+	/**
+	 * @param results the results to set
+	 */
+	public static void setResults(List<DataSetResults> results) {
+		Consumer.results = results;
+	}
+
+	/**
+	 * @return the cont
+	 */
+	public int getCont() {
+		return cont;
+	}
+
+	/**
+	 * @param cont the cont to set
+	 */
+	public void setCont(int cont) {
+		this.cont = cont;
 	}
 }
 

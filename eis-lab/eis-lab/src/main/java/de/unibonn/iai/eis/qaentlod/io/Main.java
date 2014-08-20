@@ -3,9 +3,13 @@
  */
 package de.unibonn.iai.eis.qaentlod.io;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import de.unibonn.iai.eis.qaentlod.io.streamprocessor.Consumer;
 import de.unibonn.iai.eis.qaentlod.io.streamprocessor.Producer;
@@ -17,6 +21,7 @@ import de.unibonn.iai.eis.qaentlod.util.Metrics;
 import de.unibonn.iai.eis.qaentlod.util.ResultDataSet;
 import de.unibonn.iai.eis.qaentlod.util.Results;
 import de.unibonn.iai.eis.qaentlod.util.ResultsHelper;
+
 
 /**
  * This class is the main class, it is in charge to load the data and create the
@@ -48,9 +53,12 @@ public class Main {
 		String url = Menus.menuUrl();
 		serviceUrl = url;
 
+		String mail = Menus.menuMail();
+		
 		StreamManager streamQuads = new StreamManager();
 		Producer p1 = new Producer(streamQuads, INCREMENT, serviceUrl);
 		Consumer c1 = new Consumer(streamQuads, p1);
+		c1.setMail(mail);
 		p1.start();
 		c1.start();
 		
@@ -63,6 +71,29 @@ public class Main {
 		//writeFile(streamQuads);
 	}
 	
+
+
+	public String loadConfiguration() throws IOException {
+
+		String result = "";
+		Properties prop = new Properties();
+		String propFileName = "config.properties";
+
+		InputStream inputStream = getClass().getClassLoader()
+				.getResourceAsStream(propFileName);
+		prop.load(inputStream);
+		if (inputStream == null) {
+			throw new FileNotFoundException("property file '" + propFileName
+					+ "' not found in the classpath");
+		}
+
+		// get the property value and print it out
+		String dataBase = prop.getProperty("dataBase");
+
+		result = dataBase;
+		System.out.println(dataBase);
+		return result;
+	}
 
 	
 	public static void writeFile(StreamManager streamQuads){
@@ -99,7 +130,10 @@ public class Main {
 		results.getDimensions().add(dimension2);
 		
 		try {
-			ResultDataSet resultToWrite = ResultsHelper.read(fileName);
+
+			Main main = new Main();
+
+			ResultDataSet resultToWrite = ResultsHelper.read(main.loadConfiguration());
 					
 			resultToWrite.setLastDate(new Date());
 			resultToWrite.getResults().add(results);
