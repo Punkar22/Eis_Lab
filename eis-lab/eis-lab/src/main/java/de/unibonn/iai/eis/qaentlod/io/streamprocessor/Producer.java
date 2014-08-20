@@ -43,6 +43,7 @@ public class Producer extends Thread {
 	/**
 	 * This method start the thread to run the producer
 	 */
+	@SuppressWarnings("deprecation")
 	public void run() {
 		this.setRunning(true);
 		int iterationNumber = 0;

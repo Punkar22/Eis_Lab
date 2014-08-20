@@ -1,14 +1,16 @@
 package de.unibonn.iai.eis.qaentlod.webinterface.beans;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import javax.annotation.PostConstruct;
 import javax.faces.model.SelectItem;
 import javax.faces.event.ActionEvent;
-
-import org.apache.log4j.Logger;
 
 import de.unibonn.iai.eis.qaentlod.util.Dimension;
 import de.unibonn.iai.eis.qaentlod.util.Metrics;
@@ -30,13 +32,6 @@ public class QualityBean implements Serializable {
 	private static final long serialVersionUID = 8760794775191152542L;
 
 	// ////////////////////////////////////////////////////////////////////////
-	// Logger
-	// ////////////////////////////////////////////////////////////////////////
-	/** */
-	private static Logger _logger = Logger
-			.getLogger(QualityBean.class);
-
-	// ////////////////////////////////////////////////////////////////////////
 	// Attribute of the backing bean
 	// ////////////////////////////////////////////////////////////////////////
 	private List<SelectItem> availableCategories;
@@ -48,7 +43,7 @@ public class QualityBean implements Serializable {
 	private String currentDataSet;
 	
 
-	private static String fileName = "C:\\Lab\\results.xml";
+	//private static String fileName = "C:\\Lab\\results.xml";
 	private ResultDataSet results;
 	
 	/**
@@ -57,7 +52,7 @@ public class QualityBean implements Serializable {
 	public QualityBean() {
 		super();	
 		try {
-			results = ResultsHelper.read(fileName);
+			results = ResultsHelper.read(this.loadConfiguration());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
@@ -81,7 +76,6 @@ public class QualityBean implements Serializable {
 	private void loadDimensions(){
 		try {
 			this.availableCategories = new ArrayList<SelectItem>();
-			
 			for (Results result : results.getResults()) {
 				for(Dimension dimension: result.getDimensions()){
 					SelectItem aux = new SelectItem(dimension.getName(),dimension.getName());
@@ -91,8 +85,10 @@ public class QualityBean implements Serializable {
 							contained = true;
 						}
 					}
-					if(!contained)
-						this.availableCategories.add(aux);	
+					if(!contained){
+						System.out.println(aux);
+						this.availableCategories.add(aux);
+					}
 				}
 			}			
 		} catch (Exception e) {
@@ -275,6 +271,33 @@ public class QualityBean implements Serializable {
 				return "The Selected Data Set is: " + this.currentDataSet;
 		
 		return "";
+	}
+	
+	
+	/**
+	 * This method read from a local file the directory where is saved the Dataset processed
+	 * @return The path of the file in the server
+	 * @throws IOException
+	 */
+	public String loadConfiguration() throws IOException {
+
+		String result = "";
+		Properties prop = new Properties();
+		String propFileName = "config.properties";
+
+		InputStream inputStream = getClass().getClassLoader()
+				.getResourceAsStream(propFileName);
+		prop.load(inputStream);
+		if (inputStream == null) {
+			throw new FileNotFoundException("property file '" + propFileName
+					+ "' not found in the classpath");
+		}
+
+		// get the property value and print it out
+		String dataBase = prop.getProperty("dataBase");
+
+		result = dataBase;
+		return result;
 	}
 	
 	/**

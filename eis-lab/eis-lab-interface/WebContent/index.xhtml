@@ -12,19 +12,18 @@
 			<h:outputText value="TITULO" />
 		</ui:define>
 		<ui:define name="body">
-			<a4j:keepAlive beanName="qualityBean" />
 			<h:form>
 				<rich:panel>
 					<f:verbatim>
 						<h1>Quality Assessment on Enterprise Linked Data</h1>
 					</f:verbatim>
-					<rich:tabPanel switchType="ajax">
+					<rich:tabPanel switchType="client">
 						<rich:tab label="Quality Assesment">
 							<ui:include src="/tabs/tab1.xhtml" />
 						</rich:tab>
-						<rich:tab label="Second">
-				            Test tab
-				        </rich:tab>
+						<rich:tab label="Evaluate Dataset">
+							<ui:include src="/tabs/tab2.xhtml" />
+						</rich:tab>
 					</rich:tabPanel>
 				</rich:panel>
 			</h:form>
