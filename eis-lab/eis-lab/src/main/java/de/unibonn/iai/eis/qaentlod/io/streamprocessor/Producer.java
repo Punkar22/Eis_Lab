@@ -47,7 +47,8 @@ public class Producer extends Thread {
 	public void run() {
 		this.setRunning(true);
 		int iterationNumber = 0;
-		while (true && iterationNumber < 10) {
+		//while (true && iterationNumber < 10) {
+		while (true) {
 			System.out.println("*************        ITERATION NUMBER: " + iterationNumber + " TRIPLES: " +  iterationNumber*number + "*******************");
 			
 			//Query to load all the information
