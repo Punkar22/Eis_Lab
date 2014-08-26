@@ -38,7 +38,7 @@ public class Main {
 
 	private static String serviceUrl = "http://protein.bio2rdf.org/sparql";
 
-	private static String fileName = "C:\\Lab\\results.xml";
+	private static String fileName = "C:\\Users\\RaufA\\Desktop\\Lab\\results.xml";
 	private static List<DataSetResults> results;
 	
 	/**
@@ -106,7 +106,7 @@ public class Main {
 		Metrics metric1 = new Metrics();
 		metric1.setName("Authenticity of the Dataset");
 		metric1.setValue(Double.toString(result.getAutMetric().metricValue()));
-
+     
 		Metrics metric2 = new Metrics();
 		metric2.setName("Digital Signatures");
 		metric2.setValue(Double.toString(result.getDigMetric().metricValue()));
@@ -119,10 +119,18 @@ public class Main {
 		Metrics metric3 = new Metrics();
 		metric3.setName("Free of Error");
 		metric3.setValue(Double.toString(result.getFreeMetric().metricValue()));
-
+		
+		Metrics metric4 = new Metrics();
+		metric4.setName("Measurability");
+		metric4.setValue(Double.toString(result.getAutMetric().metricValue()));
+		
 		Dimension dimension2 = new Dimension();
 		dimension2.setName("Free of Error");
 		dimension2.getMetrics().add(metric3);
+		
+		Dimension dimension3 = new Dimension();
+		dimension3.setName("Measurability");
+		dimension3.getMetrics().add(metric4);
 
 		Results results = new Results();
 		results.setUrl(serviceUrl);
