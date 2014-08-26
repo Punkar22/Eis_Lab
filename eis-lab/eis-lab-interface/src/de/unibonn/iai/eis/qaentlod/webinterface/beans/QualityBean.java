@@ -1,17 +1,14 @@
 package de.unibonn.iai.eis.qaentlod.webinterface.beans;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 import javax.annotation.PostConstruct;
 import javax.faces.model.SelectItem;
 import javax.faces.event.ActionEvent;
 
+import de.unibonn.iai.eis.qaentlod.io.utilities.ConfigurationLoader;
 import de.unibonn.iai.eis.qaentlod.util.Dimension;
 import de.unibonn.iai.eis.qaentlod.util.Metrics;
 import de.unibonn.iai.eis.qaentlod.util.ResultDataSet;
@@ -52,7 +49,8 @@ public class QualityBean implements Serializable {
 	public QualityBean() {
 		super();	
 		try {
-			results = ResultsHelper.read(this.loadConfiguration());
+			ConfigurationLoader conf = new ConfigurationLoader();
+			results = ResultsHelper.read(conf.loadDataBase());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
@@ -272,34 +270,7 @@ public class QualityBean implements Serializable {
 		
 		return "";
 	}
-	
-	
-	/**
-	 * This method read from a local file the directory where is saved the Dataset processed
-	 * @return The path of the file in the server
-	 * @throws IOException
-	 */
-	public String loadConfiguration() throws IOException {
-
-		String result = "";
-		Properties prop = new Properties();
-		String propFileName = "config.properties";
-
-		InputStream inputStream = getClass().getClassLoader()
-				.getResourceAsStream(propFileName);
-		prop.load(inputStream);
-		if (inputStream == null) {
-			throw new FileNotFoundException("property file '" + propFileName
-					+ "' not found in the classpath");
-		}
-
-		// get the property value and print it out
-		String dataBase = prop.getProperty("dataBase");
-
-		result = dataBase;
-		return result;
-	}
-	
+		
 	/**
 	 * This method return the result for the input values for the user
 	 * @return
