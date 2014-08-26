@@ -50,6 +50,7 @@ public class QualityBean implements Serializable {
 		super();	
 		try {
 			ConfigurationLoader conf = new ConfigurationLoader();
+			System.out.println(conf.loadDataBase());
 			results = ResultsHelper.read(conf.loadDataBase());
 		} catch (Exception e) {
 			e.printStackTrace();
