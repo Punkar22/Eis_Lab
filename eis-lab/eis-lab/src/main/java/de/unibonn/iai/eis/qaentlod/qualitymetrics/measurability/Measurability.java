@@ -27,7 +27,7 @@ public class Measurability extends AbstractQualityMetric {
 
 	// counter will increase when free of error quad is checked
 	protected int counter = 0,threshold=50;
-	protected boolean sparqlEndPointWorks=false;
+	public boolean sparqlEndPointWorks=false;
 	
 	/**
 	 * for being measurable data set must contain number of triples
