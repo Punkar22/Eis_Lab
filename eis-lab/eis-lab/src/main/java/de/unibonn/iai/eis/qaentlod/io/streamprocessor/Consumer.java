@@ -1,14 +1,17 @@
 package de.unibonn.iai.eis.qaentlod.io.streamprocessor;
 
-
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import com.hp.hpl.jena.sparql.core.Quad;
 
 import de.unibonn.iai.eis.qaentlod.datatypes.Object2Quad;
-import de.unibonn.iai.eis.qaentlod.io.utilities.ConfigurationLoader;
+import de.unibonn.iai.eis.qaentlod.io.Main;
 import de.unibonn.iai.eis.qaentlod.io.utilities.DataSetResults;
 import de.unibonn.iai.eis.qaentlod.io.utilities.UtilMail;
 import de.unibonn.iai.eis.qaentlod.util.Dimension;
@@ -29,7 +32,7 @@ public class Consumer extends Thread {
 	private Producer producer;
 	private int cont = 0;
 	private boolean running;
-	private static String fileName = "C:\\Lab\\results.xml";
+	private static String fileName = "C:\\Users\\RaufA\\Desktop\\Lab\\results.xml";
 	private static List<DataSetResults> results;
 	private String mail;
 	/**
@@ -53,13 +56,9 @@ public class Consumer extends Thread {
 		while(producer.isRunning()){
 			value = new Object2Quad(streamManager.get()).getStatement();
 			//Here we compute all the metrics
-			//Verifiability Metrics
 			this.streamManager.digMetric.compute(value);
 			this.streamManager.autMetric.compute(value);
-			//Free of error metrics
-			this.streamManager.freeMetric.compute(value);
-			//Aditional Metrics
-			
+			//this.streamManager.freeMetric.compute(value);
 			setCont(getCont() + 1);
 			contAux++;
 			if(contAux == 10000){
@@ -79,8 +78,8 @@ public class Consumer extends Thread {
 	 */
 	public void writeFile(){
 		Consumer.setResults(new ArrayList<DataSetResults>());
-		DataSetResults result = new DataSetResults(this.producer.getServiceUrl(), streamManager.digMetric,
-				streamManager.autMetric, streamManager.freeMetric);
+		DataSetResults result = new DataSetResults(this.producer.getServiceUrl(), streamManager.digMetric,streamManager.autMetric, 
+				streamManager.freeMetric, streamManager.measurAbility);
 		getResults().add(result);
 
 		Metrics metric1 = new Metrics();
@@ -102,28 +101,25 @@ public class Consumer extends Thread {
 		
 		Metrics metric4 = new Metrics();
 		metric4.setName("Measurability");
-		//Stril you have to complete for your value
-		metric4.setValue("0.0");
-		
+		metric4.setValue(Double.toString(result.getFreeMetric().metricValue()));
+
 		Dimension dimension2 = new Dimension();
 		dimension2.setName("Free of Error");
 		dimension2.getMetrics().add(metric3);
-		
+
 		Dimension dimension3 = new Dimension();
 		dimension3.setName("Measurability");
 		dimension3.getMetrics().add(metric4);
-
+		
 		Results results = new Results();
 		results.setUrl(this.producer.getServiceUrl());
 		results.getDimensions().add(dimension1);
 		results.getDimensions().add(dimension2);
-		results.getDimensions().add(dimension3);
-		
 		
 		try {
-			ConfigurationLoader conf = new ConfigurationLoader();
+			Main main = new Main();
 
-			ResultDataSet resultToWrite = ResultsHelper.read(conf.loadDataBase());
+			ResultDataSet resultToWrite = ResultsHelper.read(main.loadConfiguration());
 					
 			resultToWrite.setLastDate(new Date());
 			boolean modified = false;
@@ -142,7 +138,7 @@ public class Consumer extends Thread {
 			if(this.getMail() != null)
 				UtilMail.sendMail(this.getMail());
 			else
-				UtilMail.sendMail(conf.loadMailDefault());
+				UtilMail.sendMail(this.loadMailDefault());
 			
 		} catch (Exception e) {
 			System.out.println("****** Can't save the result because: "
@@ -150,7 +146,57 @@ public class Consumer extends Thread {
 		}
 	}
 
+	/**
+	 * This method read from a local file the directory where is saved the Dataset processed
+	 * @return The path of the file in the server
+	 * @throws IOException
+	 */
+	public String loadConfiguration() throws IOException {
+
+		String result = "";
+		Properties prop = new Properties();
+		String propFileName = "config.properties";
+
+		InputStream inputStream = getClass().getClassLoader()
+				.getResourceAsStream(propFileName);
+		prop.load(inputStream);
+		if (inputStream == null) {
+			throw new FileNotFoundException("property file '" + propFileName
+					+ "' not found in the classpath");
+		}
+
+		// get the property value and print it out
+		String dataBase = prop.getProperty("dataBase");
+
+		result = dataBase;
+		return result;
+	}
 	
+	/**
+	 * This method read from a local file the directory where is saved the Dataset processed
+	 * @return The path of the file in the server
+	 * @throws IOException
+	 */
+	public String loadMailDefault() throws IOException {
+
+		String result = "";
+		Properties prop = new Properties();
+		String propFileName = "config.properties";
+
+		InputStream inputStream = getClass().getClassLoader()
+				.getResourceAsStream(propFileName);
+		prop.load(inputStream);
+		if (inputStream == null) {
+			throw new FileNotFoundException("property file '" + propFileName
+					+ "' not found in the classpath");
+		}
+
+		// get the property value and print it out
+		String dataBase = prop.getProperty("defaultMail");
+
+		result = dataBase;
+		return result;
+	}
 	
 	
 	/**

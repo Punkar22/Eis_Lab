@@ -3,6 +3,7 @@ package de.unibonn.iai.eis.qaentlod.io.streamprocessor;
 import com.hp.hpl.jena.query.QuerySolution;
 
 import de.unibonn.iai.eis.qaentlod.qualitymetrics.freeoferror.FreeOfError;
+import de.unibonn.iai.eis.qaentlod.qualitymetrics.measurability.Measurability;
 import de.unibonn.iai.eis.qaentlod.qualitymetrics.trust.verifiability.AuthenticityDataset;
 import de.unibonn.iai.eis.qaentlod.qualitymetrics.trust.verifiability.DigitalSignatures;
 
@@ -15,7 +16,8 @@ public class StreamManager {
 	public QuerySolution object; //Object to be pass between elements
 	public DigitalSignatures digMetric = new DigitalSignatures(); //Metrics to be apply
 	public AuthenticityDataset autMetric = new AuthenticityDataset(); //Metrics to be apply
-	public FreeOfError freeMetric = new FreeOfError();
+	public FreeOfError freeMetric = new FreeOfError(); 
+	public Measurability measurAbility = new Measurability();
 	
 	/**
 	 * This class obtain the values published by the producer
