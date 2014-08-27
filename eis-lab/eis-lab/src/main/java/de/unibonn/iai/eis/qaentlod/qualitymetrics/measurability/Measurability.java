@@ -15,10 +15,9 @@ import de.unibonn.iai.eis.qaentlod.qualitymetrics.AbstractQualityMetric;
 import de.unibonn.iai.eis.qaentlod.vocabularies.DQM;
 
 /**
- * @author Rauf Agayev, Vugar Agayev Verifies whether given data set has got
- *         syntax error respect to subject, predicate and object. Metrics checks
- *         if subject, predicate and object is syntactically correct by
- *         definition of these terms.
+ * @author Rauf Agayev, Vugar Agayev verifies if given data is measurable or not. 
+ * For this purpose it checks given data set size in terms of triples (it must higher than
+ * some threshold) and checks if it has got access to sparql endpoint. 
  */
 
 public class Measurability extends AbstractQualityMetric {
