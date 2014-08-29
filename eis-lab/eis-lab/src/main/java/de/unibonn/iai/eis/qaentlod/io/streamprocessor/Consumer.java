@@ -11,6 +11,7 @@ import java.util.Properties;
 import com.hp.hpl.jena.sparql.core.Quad;
 
 import de.unibonn.iai.eis.qaentlod.datatypes.Object2Quad;
+import de.unibonn.iai.eis.qaentlod.io.utilities.ConfigurationLoader;
 import de.unibonn.iai.eis.qaentlod.io.Main;
 import de.unibonn.iai.eis.qaentlod.io.utilities.DataSetResults;
 import de.unibonn.iai.eis.qaentlod.io.utilities.UtilMail;
@@ -21,7 +22,9 @@ import de.unibonn.iai.eis.qaentlod.util.Results;
 import de.unibonn.iai.eis.qaentlod.util.ResultsHelper;
 
 /**
- * This class read all the values produce by the producer an execute the metrics over the quad obtained
+ * This class read all the values produce by the producer an execute the metrics
+ * over the quad obtained
+ * 
  * @author Carlos
  */
 public class Consumer extends Thread {
@@ -35,10 +38,15 @@ public class Consumer extends Thread {
 	private static String fileName = "C:\\Users\\RaufA\\Desktop\\Lab\\results.xml";
 	private static List<DataSetResults> results;
 	private String mail;
+
 	/**
 	 * Creator of the class
-	 * @param streamManager, this class is the stream Manager to put all the values obtain
-	 * @param producer, producer of the events to be read
+	 * 
+	 * @param streamManager
+	 *            , this class is the stream Manager to put all the values
+	 *            obtain
+	 * @param producer
+	 *            , producer of the events to be read
 	 */
 	public Consumer(StreamManager streamManager, Producer producer) {
 		this.streamManager = streamManager;
@@ -50,36 +58,42 @@ public class Consumer extends Thread {
 	 */
 	public void run() {
 		Quad value;
-		int contAux=0;
+		int contAux = 0;
 		this.setRunning(true);
-		//Run the consumer while the producer is publishing data
-		while(producer.isRunning()){
+		// Run the consumer while the producer is publishing data
+		while (producer.isRunning()) {
 			value = new Object2Quad(streamManager.get()).getStatement();
-			//Here we compute all the metrics
+			// Here we compute all the metrics
+			// Verifiability Metrics
 			this.streamManager.digMetric.compute(value);
 			this.streamManager.autMetric.compute(value);
-			//this.streamManager.freeMetric.compute(value);
+			// Free of error metrics
+			this.streamManager.freeMetric.compute(value);
+			// Measurability metrics
+			this.streamManager.measurAbility.compute(value);
 			setCont(getCont() + 1);
 			contAux++;
-			if(contAux == 10000){
+			if (contAux == 10000) {
 				contAux = 0;
 				System.out.println("Read 10000 triples");
 			}
 		}
 		this.writeFile();
-		//System.out.println("The number of quads read is: " + cont);
-		//this.stop();
+		// System.out.println("The number of quads read is: " + cont);
+		// this.stop();
 		this.setRunning(false);
-		//this.writeFile();
+		// this.writeFile();
 	}
 
 	/**
 	 * 
 	 */
-	public void writeFile(){
+	public void writeFile() {
 		Consumer.setResults(new ArrayList<DataSetResults>());
-		DataSetResults result = new DataSetResults(this.producer.getServiceUrl(), streamManager.digMetric,streamManager.autMetric, 
-				streamManager.freeMetric, streamManager.measurAbility);
+		DataSetResults result = new DataSetResults(
+				this.producer.getServiceUrl(), streamManager.digMetric,
+				streamManager.autMetric, streamManager.freeMetric,
+				streamManager.measurAbility);
 		getResults().add(result);
 
 		Metrics metric1 = new Metrics();
@@ -98,7 +112,7 @@ public class Consumer extends Thread {
 		Metrics metric3 = new Metrics();
 		metric3.setName("Free of Error");
 		metric3.setValue(Double.toString(result.getFreeMetric().metricValue()));
-		
+
 		Metrics metric4 = new Metrics();
 		metric4.setName("Measurability");
 		metric4.setValue(Double.toString(result.getFreeMetric().metricValue()));
@@ -110,36 +124,39 @@ public class Consumer extends Thread {
 		Dimension dimension3 = new Dimension();
 		dimension3.setName("Measurability");
 		dimension3.getMetrics().add(metric4);
-		
+
 		Results results = new Results();
 		results.setUrl(this.producer.getServiceUrl());
 		results.getDimensions().add(dimension1);
 		results.getDimensions().add(dimension2);
-		
+		results.getDimensions().add(dimension3);
 		try {
+			ConfigurationLoader conf = new ConfigurationLoader();
 			Main main = new Main();
+			// ResultDataSet resultToWrite =
+			// ResultsHelper.read(conf.loadDataBase());
+			ResultDataSet resultToWrite = ResultsHelper.read(main
+					.loadConfiguration());
 
-			ResultDataSet resultToWrite = ResultsHelper.read(main.loadConfiguration());
-					
 			resultToWrite.setLastDate(new Date());
 			boolean modified = false;
 			for (Results resultAux : resultToWrite.getResults()) {
-				if(resultAux.getUrl().equals(this.producer.getServiceUrl())){
+				if (resultAux.getUrl().equals(this.producer.getServiceUrl())) {
 					resultAux = results;
 					modified = true;
 				}
 			}
-			
-			if(!modified)
-				resultToWrite.getResults().add(results);
-			
-			ResultsHelper.write(resultToWrite, fileName);
 
-			if(this.getMail() != null)
+			if (!modified)
+				resultToWrite.getResults().add(results);
+			ResultsHelper.write(resultToWrite, fileName);
+			if (this.getMail() != null)
 				UtilMail.sendMail(this.getMail());
-			else
+			else {
+				UtilMail.sendMail(conf.loadMailDefault());
 				UtilMail.sendMail(this.loadMailDefault());
-			
+			}
+
 		} catch (Exception e) {
 			System.out.println("****** Can't save the result because: "
 					+ e.toString());
@@ -147,7 +164,9 @@ public class Consumer extends Thread {
 	}
 
 	/**
-	 * This method read from a local file the directory where is saved the Dataset processed
+	 * This method read from a local file the directory where is saved the
+	 * Dataset processed
+	 * 
 	 * @return The path of the file in the server
 	 * @throws IOException
 	 */
@@ -171,9 +190,11 @@ public class Consumer extends Thread {
 		result = dataBase;
 		return result;
 	}
-	
+
 	/**
-	 * This method read from a local file the directory where is saved the Dataset processed
+	 * This method read from a local file the directory where is saved the
+	 * Dataset processed
+	 * 
 	 * @return The path of the file in the server
 	 * @throws IOException
 	 */
@@ -197,8 +218,7 @@ public class Consumer extends Thread {
 		result = dataBase;
 		return result;
 	}
-	
-	
+
 	/**
 	 * @return the running
 	 */
@@ -207,7 +227,8 @@ public class Consumer extends Thread {
 	}
 
 	/**
-	 * @param running the running to set
+	 * @param running
+	 *            the running to set
 	 */
 	public void setRunning(boolean running) {
 		this.running = running;
@@ -221,7 +242,8 @@ public class Consumer extends Thread {
 	}
 
 	/**
-	 * @param mail the mail to set
+	 * @param mail
+	 *            the mail to set
 	 */
 	public void setMail(String mail) {
 		this.mail = mail;
@@ -235,7 +257,8 @@ public class Consumer extends Thread {
 	}
 
 	/**
-	 * @param results the results to set
+	 * @param results
+	 *            the results to set
 	 */
 	public static void setResults(List<DataSetResults> results) {
 		Consumer.results = results;
@@ -249,10 +272,10 @@ public class Consumer extends Thread {
 	}
 
 	/**
-	 * @param cont the cont to set
+	 * @param cont
+	 *            the cont to set
 	 */
 	public void setCont(int cont) {
 		this.cont = cont;
 	}
 }
-
