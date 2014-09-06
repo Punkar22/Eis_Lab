@@ -1,18 +1,13 @@
 package de.unibonn.iai.eis.qaentlod.io.streamprocessor;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 
 import com.hp.hpl.jena.sparql.core.Quad;
 
 import de.unibonn.iai.eis.qaentlod.datatypes.Object2Quad;
 import de.unibonn.iai.eis.qaentlod.io.utilities.ConfigurationLoader;
-import de.unibonn.iai.eis.qaentlod.io.Main;
 import de.unibonn.iai.eis.qaentlod.io.utilities.DataSetResults;
 import de.unibonn.iai.eis.qaentlod.io.utilities.UtilMail;
 import de.unibonn.iai.eis.qaentlod.util.Dimension;
@@ -130,13 +125,11 @@ public class Consumer extends Thread {
 		results.getDimensions().add(dimension1);
 		results.getDimensions().add(dimension2);
 		results.getDimensions().add(dimension3);
+		
 		try {
 			ConfigurationLoader conf = new ConfigurationLoader();
-			Main main = new Main();
-			// ResultDataSet resultToWrite =
-			// ResultsHelper.read(conf.loadDataBase());
-			ResultDataSet resultToWrite = ResultsHelper.read(main
-					.loadConfiguration());
+			ResultDataSet resultToWrite =
+			ResultsHelper.read(conf.loadDataBase());
 
 			resultToWrite.setLastDate(new Date());
 			boolean modified = false;
@@ -154,69 +147,12 @@ public class Consumer extends Thread {
 				UtilMail.sendMail(this.getMail());
 			else {
 				UtilMail.sendMail(conf.loadMailDefault());
-				UtilMail.sendMail(this.loadMailDefault());
 			}
 
 		} catch (Exception e) {
 			System.out.println("****** Can't save the result because: "
 					+ e.toString());
 		}
-	}
-
-	/**
-	 * This method read from a local file the directory where is saved the
-	 * Dataset processed
-	 * 
-	 * @return The path of the file in the server
-	 * @throws IOException
-	 */
-	public String loadConfiguration() throws IOException {
-
-		String result = "";
-		Properties prop = new Properties();
-		String propFileName = "config.properties";
-
-		InputStream inputStream = getClass().getClassLoader()
-				.getResourceAsStream(propFileName);
-		prop.load(inputStream);
-		if (inputStream == null) {
-			throw new FileNotFoundException("property file '" + propFileName
-					+ "' not found in the classpath");
-		}
-
-		// get the property value and print it out
-		String dataBase = prop.getProperty("dataBase");
-
-		result = dataBase;
-		return result;
-	}
-
-	/**
-	 * This method read from a local file the directory where is saved the
-	 * Dataset processed
-	 * 
-	 * @return The path of the file in the server
-	 * @throws IOException
-	 */
-	public String loadMailDefault() throws IOException {
-
-		String result = "";
-		Properties prop = new Properties();
-		String propFileName = "config.properties";
-
-		InputStream inputStream = getClass().getClassLoader()
-				.getResourceAsStream(propFileName);
-		prop.load(inputStream);
-		if (inputStream == null) {
-			throw new FileNotFoundException("property file '" + propFileName
-					+ "' not found in the classpath");
-		}
-
-		// get the property value and print it out
-		String dataBase = prop.getProperty("defaultMail");
-
-		result = dataBase;
-		return result;
 	}
 
 	/**
