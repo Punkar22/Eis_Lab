@@ -30,7 +30,6 @@ public class Consumer extends Thread {
 	private Producer producer;
 	private int cont = 0;
 	private boolean running;
-	private static String fileName = "C:\\Users\\RaufA\\Desktop\\Lab\\results.xml";
 	private static List<DataSetResults> results;
 	private String mail;
 
@@ -63,7 +62,7 @@ public class Consumer extends Thread {
 			this.streamManager.digMetric.compute(value);
 			this.streamManager.autMetric.compute(value);
 			// Free of error metrics
-			this.streamManager.freeMetric.compute(value);
+			//this.streamManager.freeMetric.compute(value);
 			// Measurability metrics
 			this.streamManager.measurAbility.compute(value);
 			setCont(getCont() + 1);
@@ -110,7 +109,7 @@ public class Consumer extends Thread {
 
 		Metrics metric4 = new Metrics();
 		metric4.setName("Measurability");
-		metric4.setValue(Double.toString(result.getFreeMetric().metricValue()));
+		metric4.setValue(Double.toString(result.getMeasurMetric().metricValue()));
 
 		Dimension dimension2 = new Dimension();
 		dimension2.setName("Free of Error");
@@ -128,21 +127,30 @@ public class Consumer extends Thread {
 		
 		try {
 			ConfigurationLoader conf = new ConfigurationLoader();
-			ResultDataSet resultToWrite =
-			ResultsHelper.read(conf.loadDataBase());
+			ResultDataSet resultToWrite = ResultsHelper.read(conf.loadDataBase());
 
 			resultToWrite.setLastDate(new Date());
 			boolean modified = false;
+			
+			List<Results> aux = new ArrayList<Results>();
 			for (Results resultAux : resultToWrite.getResults()) {
 				if (resultAux.getUrl().equals(this.producer.getServiceUrl())) {
 					resultAux = results;
 					modified = true;
+				}else{
+					aux.add(resultAux);
 				}
+					
 			}
 
-			if (!modified)
+			if (!modified){
 				resultToWrite.getResults().add(results);
-			ResultsHelper.write(resultToWrite, fileName);
+			}else{
+				aux.add(results);
+				resultToWrite.setResults(aux);
+			}
+			
+			ResultsHelper.write(resultToWrite, conf.loadDataBase());
 			if (this.getMail() != null)
 				UtilMail.sendMail(this.getMail());
 			else {

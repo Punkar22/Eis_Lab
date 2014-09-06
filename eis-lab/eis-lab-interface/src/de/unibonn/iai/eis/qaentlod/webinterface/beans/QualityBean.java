@@ -68,7 +68,7 @@ public class QualityBean implements Serializable {
 	public void init() {
 		this.loadDimensions();
 	}
-
+	
 	/**
 	 * This method load all the Dimensions
 	 */
@@ -157,8 +157,17 @@ public class QualityBean implements Serializable {
 	private void loadDataSet(){
 		for (Results result: results.getResults()) {
 			SelectItem aux = new SelectItem(result.getUrl(), result.getUrl());
-			if(!this.availableDataSets.contains(aux))
-				this.availableDataSets.add(aux);
+
+			for (Dimension dimension : result.getDimensions()) {
+				for (Metrics metric : dimension.getMetrics()) {
+					if(this.currentMetric.equals(metric.getName())){
+						if(!this.availableDataSets.contains(aux))
+							this.availableDataSets.add(aux);
+					}
+				}
+			}
+		
+			
 		}
 	}
 	

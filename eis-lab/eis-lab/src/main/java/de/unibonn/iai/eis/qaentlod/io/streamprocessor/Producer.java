@@ -47,7 +47,7 @@ public class Producer extends Thread {
 	public void run() {
 		this.setRunning(true);
 		int iterationNumber = 0;
-		while (true && iterationNumber < 4) {
+		while (true && iterationNumber < 14) {
 		//while (true) {
 			System.out.println("*************        ITERATION NUMBER: " + iterationNumber + " TRIPLES: " +  iterationNumber*number + "*******************");
 			
@@ -73,9 +73,7 @@ public class Producer extends Thread {
 				System.out.println(this.serviceUrl + " is Not working or is DOWN");
 				this.stop();
 				break; //Close the cicle
-			} finally {
-				qe.close();
-			} // end try/c			
+			} 		
 		}
 		this.setRunning(false);
 		//this.stop();
