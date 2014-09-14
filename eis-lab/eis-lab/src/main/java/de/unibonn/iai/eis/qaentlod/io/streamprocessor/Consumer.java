@@ -151,11 +151,12 @@ public class Consumer extends Thread {
 			}
 			
 			ResultsHelper.write(resultToWrite, conf.loadDataBase());
+			String text = "The process is already finish, you can check now in the web site of the QUENTLOD lab";
 			if (this.getMail() != null)
-				UtilMail.sendMail(this.getMail());
-			else {
-				UtilMail.sendMail(conf.loadMailDefault());
-			}
+				UtilMail.sendMail(this.getMail(),"Proccess Finish", text);
+			else 
+				UtilMail.sendMail(conf.loadMailDefault(),"Proccess Finish", text);
+					
 
 		} catch (Exception e) {
 			System.out.println("****** Can't save the result because: "

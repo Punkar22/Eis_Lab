@@ -64,4 +64,24 @@ public class ConfigurationLoader {
 		result = dataBase;
 		return result;
 	}
+	
+	public String loadByKey(String key) throws IOException{
+		String result = "";
+		Properties prop = new Properties();
+		String propFileName = "config.properties";
+
+		InputStream inputStream = getClass().getClassLoader()
+				.getResourceAsStream(propFileName);
+		prop.load(inputStream);
+		if (inputStream == null) {
+			throw new FileNotFoundException("property file '" + propFileName
+					+ "' not found in the classpath");
+		}
+
+		// get the property value and print it out
+		String dataBase = prop.getProperty(key);
+
+		result = dataBase;
+		return result;
+	}
 }
