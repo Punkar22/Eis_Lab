@@ -4,12 +4,17 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.sparql.core.Quad;
 
 import de.unibonn.iai.eis.qaentlod.datatypes.Object2Quad;
 import de.unibonn.iai.eis.qaentlod.io.utilities.ConfigurationLoader;
 import de.unibonn.iai.eis.qaentlod.io.utilities.DataSetResults;
 import de.unibonn.iai.eis.qaentlod.io.utilities.UtilMail;
+import de.unibonn.iai.eis.qaentlod.qualitymetrics.freeoferror.FreeOfError;
+import de.unibonn.iai.eis.qaentlod.qualitymetrics.measurability.Measurability;
+import de.unibonn.iai.eis.qaentlod.qualitymetrics.trust.verifiability.AuthenticityDataset;
+import de.unibonn.iai.eis.qaentlod.qualitymetrics.trust.verifiability.DigitalSignatures;
 import de.unibonn.iai.eis.qaentlod.util.Dimension;
 import de.unibonn.iai.eis.qaentlod.util.Metrics;
 import de.unibonn.iai.eis.qaentlod.util.ResultDataSet;
@@ -33,6 +38,14 @@ public class Consumer extends Thread {
 	private static List<DataSetResults> results;
 	private String mail;
 
+	public DigitalSignatures digMetric = new DigitalSignatures(); // Metrics to
+																	// be apply
+	public AuthenticityDataset autMetric = new AuthenticityDataset(); // Metrics
+																		// to be
+																		// apply
+	public FreeOfError freeMetric = new FreeOfError();
+	public Measurability measurAbility = new Measurability();
+
 	/**
 	 * Creator of the class
 	 * 
@@ -55,39 +68,56 @@ public class Consumer extends Thread {
 		int contAux = 0;
 		this.setRunning(true);
 		// Run the consumer while the producer is publishing data
-		while (producer.isRunning()) {
-			value = new Object2Quad(streamManager.get()).getStatement();
-			// Here we compute all the metrics
-			// Verifiability Metrics
-			this.streamManager.digMetric.compute(value);
-			this.streamManager.autMetric.compute(value);
-			// Free of error metrics
-			//this.streamManager.freeMetric.compute(value);
-			// Measurability metrics
-			this.streamManager.measurAbility.compute(value);
-			setCont(getCont() + 1);
-			contAux++;
-			if (contAux == 10000) {
-				contAux = 0;
-				System.out.println("Read 10000 triples");
+		while (producer.isAlive() || streamManager.getCounter() > 0) {
+			ResultSet aux = streamManager.get(); // Retrieves the resulset that
+													// was published
+			if (aux.hasNext()) {
+				while (aux.hasNext()) {
+					value = new Object2Quad(streamManager.get()).getStatement();
+					// Here we compute all the metrics
+					// Verifiability Metrics
+					this.digMetric.compute(value);
+					this.autMetric.compute(value);
+					// Free of error metrics
+					this.freeMetric.compute(value);
+					// Measurability metrics
+					this.measurAbility.compute(value);
+					setCont(getCont() + 1);
+					contAux++;
+					if (contAux == 10000) { // Message to control the
+											// information
+						contAux = 0;
+						System.out.println("Read 10000 triples");
+					}
+					if (this.cont % 100000 == 0) {
+						this.writeFile(false);// When the dataset is to big it
+												// is better to store the
+												// information every 100000
+												// triples processed, sometimes
+												// the service is shotdown and
+												// then the info is lost
+					}
+				}
+				streamManager.setCounter(streamManager.getCounter() - 1);// Announced
+																			// that
+																			// it
+																			// consumer
+																			// the
+																			// resource
 			}
 		}
-		this.writeFile();
-		// System.out.println("The number of quads read is: " + cont);
-		// this.stop();
-		this.setRunning(false);
-		// this.writeFile();
+		this.writeFile(true);
+		System.out.println("The number of quads read is: " + cont);
 	}
 
 	/**
 	 * 
 	 */
-	public void writeFile() {
+	public void writeFile(boolean sendMessage) {
 		Consumer.setResults(new ArrayList<DataSetResults>());
 		DataSetResults result = new DataSetResults(
-				this.producer.getServiceUrl(), streamManager.digMetric,
-				streamManager.autMetric, streamManager.freeMetric,
-				streamManager.measurAbility);
+				this.producer.getServiceUrl(), digMetric, autMetric,
+				freeMetric, measurAbility);
 		getResults().add(result);
 
 		Metrics metric1 = new Metrics();
@@ -109,7 +139,8 @@ public class Consumer extends Thread {
 
 		Metrics metric4 = new Metrics();
 		metric4.setName("Measurability");
-		metric4.setValue(Double.toString(result.getMeasurMetric().metricValue()));
+		metric4.setValue(Double
+				.toString(result.getMeasurMetric().metricValue()));
 
 		Dimension dimension2 = new Dimension();
 		dimension2.setName("Free of Error");
@@ -124,39 +155,42 @@ public class Consumer extends Thread {
 		results.getDimensions().add(dimension1);
 		results.getDimensions().add(dimension2);
 		results.getDimensions().add(dimension3);
-		
+
 		try {
 			ConfigurationLoader conf = new ConfigurationLoader();
-			ResultDataSet resultToWrite = ResultsHelper.read(conf.loadDataBase());
+			ResultDataSet resultToWrite = ResultsHelper.read(conf
+					.loadDataBase());
 
 			resultToWrite.setLastDate(new Date());
 			boolean modified = false;
-			
+
 			List<Results> aux = new ArrayList<Results>();
 			for (Results resultAux : resultToWrite.getResults()) {
 				if (resultAux.getUrl().equals(this.producer.getServiceUrl())) {
 					resultAux = results;
 					modified = true;
-				}else{
+				} else {
 					aux.add(resultAux);
 				}
-					
+
 			}
 
-			if (!modified){
+			if (!modified) {
 				resultToWrite.getResults().add(results);
-			}else{
+			} else {
 				aux.add(results);
 				resultToWrite.setResults(aux);
 			}
-			
-			ResultsHelper.write(resultToWrite, conf.loadDataBase());
-			String text = "The process is already finish, you can check now in the web site of the QUENTLOD lab";
-			if (this.getMail() != null)
-				UtilMail.sendMail(this.getMail(),"Proccess Finish", text);
-			else 
-				UtilMail.sendMail(conf.loadMailDefault(),"Proccess Finish", text);
-					
+
+			if (sendMessage) {
+				ResultsHelper.write(resultToWrite, conf.loadDataBase());
+				String text = "The process is already finish, you can check now in the web site of the QUENTLOD lab";
+				if (this.getMail() != null)
+					UtilMail.sendMail(this.getMail(), "Proccess Finish", text);
+				else
+					UtilMail.sendMail(conf.loadMailDefault(),
+							"Proccess Finish", text);
+			}
 
 		} catch (Exception e) {
 			System.out.println("****** Can't save the result because: "
