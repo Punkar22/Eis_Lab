@@ -71,39 +71,46 @@ public class Consumer extends Thread {
 		while (producer.isAlive() || streamManager.getCounter() > 0) {
 			ResultSet aux = streamManager.get(); // Retrieves the resulset that
 													// was published
-			if (aux.hasNext()) {
-				while (aux.hasNext()) {
-					value = new Object2Quad(streamManager.get()).getStatement();
-					// Here we compute all the metrics
-					// Verifiability Metrics
-					this.digMetric.compute(value);
-					this.autMetric.compute(value);
-					// Free of error metrics
-					this.freeMetric.compute(value);
-					// Measurability metrics
-					this.measurAbility.compute(value);
-					setCont(getCont() + 1);
-					contAux++;
-					if (contAux == 10000) { // Message to control the
-											// information
-						contAux = 0;
-						System.out.println("Read 10000 triples");
+			try {
+				if (aux.hasNext()) {
+					while (aux.hasNext()) {
+						value = new Object2Quad(aux.next()).getStatement();
+						// Here we compute all the metrics
+						// Verifiability Metrics
+						this.digMetric.compute(value);
+						this.autMetric.compute(value);
+						// Free of error metrics
+						this.freeMetric.compute(value);
+						// Measurability metrics
+						this.measurAbility.compute(value);
+						setCont(getCont() + 1);
+						contAux++;
+						if (contAux == 10000) { // Message to control the
+												// information
+							contAux = 0;
+							System.out.println("Read 10000 triples");
+						}
+						if (this.cont % 100000 == 0) {
+							this.writeFile(false);// When the dataset is to big
+													// it
+													// is better to store the
+													// information every 100000
+													// triples processed,
+													// sometimes
+													// the service is shotdown
+													// and
+													// then the info is lost
+						}
 					}
-					if (this.cont % 100000 == 0) {
-						this.writeFile(false);// When the dataset is to big it
-												// is better to store the
-												// information every 100000
-												// triples processed, sometimes
-												// the service is shotdown and
-												// then the info is lost
-					}
+					streamManager.setCounter(streamManager.getCounter() - 1);// Announced
+																				// that
+																				// it
+																				// consumer
+																				// the
+																				// resource
 				}
-				streamManager.setCounter(streamManager.getCounter() - 1);// Announced
-																			// that
-																			// it
-																			// consumer
-																			// the
-																			// resource
+			} catch (Exception e) {
+				System.out.println(e.toString());
 			}
 		}
 		this.writeFile(true);
@@ -182,8 +189,8 @@ public class Consumer extends Thread {
 				resultToWrite.setResults(aux);
 			}
 
+			ResultsHelper.write(resultToWrite, conf.loadDataBase());
 			if (sendMessage) {
-				ResultsHelper.write(resultToWrite, conf.loadDataBase());
 				String text = "The process is already finish, you can check now in the web site of the QUENTLOD lab";
 				if (this.getMail() != null)
 					UtilMail.sendMail(this.getMail(), "Proccess Finish", text);
